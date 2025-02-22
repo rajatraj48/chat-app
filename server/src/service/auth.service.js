@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { customError } from "../middleware/customError.js";
 import jwt from "jsonwebtoken";
+import cloudinary from "../lib/cloudinary.js";
 
 const prisma = new PrismaClient();
 
@@ -110,4 +111,51 @@ export const loginUser = async (username, email, password) => {
       );
     }
   }
+
+ 
+
 };
+
+
+ 
+export const updateUser = async (profilePic, userId) => {
+    try {
+      // Validate input
+      if (!profilePic) {
+        throw new customError("Profile picture is required", 400, "ValidationError");
+      }
+  
+      // Upload the image to Cloudinary
+      const uploadResponse = await cloudinary.uploader.upload(profilePic, {
+        folder: "user_profiles", // Optional: Organize images in a folder
+      });
+  
+      // Ensure user exists
+      const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+  
+      if (!existingUser) {
+        throw new customError("User not found", 404, "NotFoundError");
+      }
+  
+      // Update user's profile picture
+      const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: { profilePic: uploadResponse.secure_url },
+      });
+  
+      return updatedUser; // Return the updated user
+    } catch (error) {
+      if (error instanceof customError) {
+        throw error; // Preserve custom errors
+      } else {
+        throw new customError(
+          "An unexpected error occurred while updating profile",
+          500,
+          "ServerError",
+          error.message
+        );
+      }
+    }
+  };

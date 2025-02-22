@@ -1,4 +1,4 @@
-import { loginUser, registerUser } from "../service/auth.service.js";
+import { loginUser, registerUser, updateUser } from "../service/auth.service.js";
 
 export const signup = async (req, res, next) => {
   try {
@@ -50,3 +50,26 @@ export const login = async (req, res, next) => {
 export const logout = (req, res) => {
   res.send("signup rout");
 };
+
+export const updateProfile = async (req, res) => {
+    try {
+      const { profilePic } = req.body;
+      const userId = req.user?.id; // Ensure `req.user` exists
+  
+      if (!userId) {
+        throw new customError("Unauthorized access", 401, "AuthError");
+      }
+  
+      // Call the service function to update user profile
+      const updatedUser = await updateUser(profilePic, userId);
+  
+      res.status(200).json({
+        message: "Profile updated successfully",
+        user: updatedUser,
+      });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        message: error.message || "Something went wrong",
+      });
+    }
+  };
